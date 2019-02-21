@@ -1,0 +1,253 @@
+configfile: "config.yaml"
+
+ACC, IDS, = glob_wildcards(config["path"]+"{accall}_{id}.fastq.gz")
+GENOMEOTHER, = glob_wildcards("/home/sdunemann/db/genomes/"+config["other"]+"/{genomeother}.gz")
+GENOMEORIGIN, = glob_wildcards("/home/sdunemann/db/genomes/"+config["origin"]+"/{genomeorigin}.gz")
+
+
+ind=GENOMEORIGIN.index(config["test_genome"])              
+del GENOMEORIGIN[ind]
+
+GENOME =GENOMEOTHER+GENOMEORIGIN
+TAX =[config["other"]]*len(GENOMEOTHER)+[config["origin"]]*len(GENOMEORIGIN)
+
+wildcard_constraints:
+    id="\d",
+    tax="\s+",
+    taxon="[^_]+"
+
+rule all:
+    input:
+        expand("02_blast_{te}/{acc}_{id}_HSP.fulllen.txt", acc=ACC, te=config["TE"], id=IDS)
+        #expand(expand("04_mates_{{te}}/{tax}_{genome}_{{acc}}_{{id}}_uniqMates.out6", zip,tax=TAX,genome=GENOME), te=config["TE"], acc=ACC, id=IDS)
+
+rule fastqc:
+    input:
+        config["path"]+"{acc}_{id}.fastq.gz"
+    output:
+        "00_fastqc/{acc}_{id}/{acc}_{id}_fastqc.html"
+    log:
+        "logs/fastqc/{acc}_{id}.log"
+    params:
+        outdir="00_fastqc/{acc}_{id}"
+    shell:
+        "set +u +o +e ; source activate fastqc ; set -u -o -e; mkdir -p {params.outdir}; fastqc {input} -o {params.outdir}"
+
+rule seqtk:
+    input:
+        reads=config["path"]+"{acc}_{id}.fastq.gz",
+        fastqc="00_fastqc/{acc}_{id}/{acc}_{id}_fastqc.html"
+    output:
+        "01_fastas/{acc}_{id}.fasta"
+    log:
+        "logs/seqtk/{acc}_{id}.log"
+    shell:
+        """
+        set +eou
+        if grep -q 'Illumina 1\.9' {input.fastqc} || grep -q 'Illumina 1\.9' {input.fastqc} ;
+        then phred=33 ; 
+        elif grep -q 'Illumina 1\.5' {input.fastqc} || grep -q 'Illumina 1\.3' {input.fastqc} ; 
+        then phred=64 ; 
+        else echo 'nay'; 
+        fi ;  
+        seqtk seq -aQ${{phred}} -q20 -n N {input.reads} > {output} ;
+        set -eou
+        """
+
+rule blast:
+    input:
+        fasta="01_fastas/{acc}_{id}.fasta",
+        TE=lambda wildcards: config["TE"][wildcards.te]
+    output:
+        "02_blast_{te}/{acc}_{id}.out6"
+    log:
+        "logs/blast_{te}/{acc}_{id}.log"
+    threads:
+        32
+    shell:  
+        "blastn -query {input.fasta} -db {input.TE} -num_threads {threads} -outfmt 6 -out {output} -evalue 1e-03"
+
+rule gzip:
+    input:
+        "01_fastas/{acc}_{id}.fasta"
+    output:
+        "01_fastas/{acc}_{id}.fasta.gz"
+    shell:
+        "gzip -c {input} > {output}"
+
+rule get_readids:
+    input:
+        fastqc="00_fastqc/{acc}_{id}/{acc}_{id}_fastqc.html",
+        blast="02_blast_{te}/{acc}_{id}.out6"
+    output:
+        "02_blast_{te}/{acc}_{id}_HSP.fulllen.txt"
+    shell:
+        """
+        set +oue
+        readlength=`grep -o 'Sequence length</td><td>[0-9]*' {input.fastqc} |cut -f 3 -d '>'` ; 
+        awk -v rl=$readlength '$8-$7==rl-1{{print}}' {input.blast} > {output} 
+        set -oue
+        """
+
+rule get_reads:
+    input:
+        reads="02_blast_{te}/{acc}_{id}_HSP.fulllen.txt",
+        fasta="01_fastas/{acc}_{id}.fasta.gz"
+    output:
+        "02_blast_{te}/{acc}_{id}_HSP.fulllen.fasta"
+    shell:
+        "seqtk subseq {input.fasta} {input.reads} > {output} "
+
+rule RepeatMasker:
+    input:
+        "02_blast_{te}/{acc}_{id}_HSP.fulllen.fasta"
+    output:
+        "02_blast_{te}/{acc}_{id}_HSP.fulllen.fasta.out"
+    threads:
+        32
+    params:
+        outdir="02_blast_{te}",
+        repbase=config["TEdb"]
+    shell:
+        "RepeatMasker -pa {threads} -s -no_is -nocut -nolow -lib {params.repbase} -dir {params.outdir} {input} "
+
+
+
+rule get_reciprocal_reads:
+    input: "02_blast_{te}/{acc}_{id}_HSP.fulllen.fasta.out"
+    output: "03_mates_{te}/{acc}_{id}_reciprocal.txt"
+    params:
+        tefasta=lambda wildcards: config["TE"][wildcards.te]
+    shell:
+        """
+        grep -f <(grep '>' {params.tefasta} | cut -f 1 | sed 's/>//g') {input} |
+        sort -k5,5 -k1,1g |
+        awk '{{print $0,"\t",$5}}' |
+        uniq -f 15 |
+        awk '{{print $5}}' > {output}
+        """
+
+rule get_mate_readID:
+    input:
+        a="03_mates_{te}/{acc}_{id}_reciprocal.txt",
+        b="03_mates_{te}/{acc}_1_reciprocal.txt",
+        c="03_mates_{te}/{acc}_2_reciprocal.txt"
+    output:
+        "03_mates_{te}/{acc}_{id}_uniqMates.txt"
+    params:
+        te="{te}",
+        acc="{acc}"
+    shell:
+        """if echo {input.a} | grep -q '_1_' ; then
+            id2=03_mates_{params.te}/{params.acc}_2_reciprocal.txt ;
+        elif echo {input.a} | grep -q '_2_' ; then
+            id2=03_mates_{params.te}/{params.acc}_1_reciprocal.txt ;
+        fi;
+        set +eou;
+        diff <(sort {input.a}) <(sort ${{id2}}) | grep '<' | sed 's/< //g' > {output} ;
+        set -oue
+        """
+
+
+rule get_mate_fastas:
+    input:
+        "03_mates_{te}/{acc}_{id}_uniqMates.txt"
+    output:
+        "03_mates_{te}/{acc}_{id}_mates.fasta"
+    params:
+        out="{acc}"
+    shell:
+        """
+        if echo {input} | grep -q '_1_' ; then
+            id2={params.out}_2.fasta.gz ;
+        elif echo {input} | grep -q '_2_' ; then
+            id2={params.out}_1.fasta.gz; fi ;
+        seqtk subseq 01_fastas/${{id2}} {input} > {output}
+        """
+
+rule mask_mates:
+    input:
+        reads="03_mates_{te}/{acc}_{id}_mates.fasta",
+        repbase=config["TEdb"]
+    output:
+        "03_mates_{te}/{acc}_{id}_mates.fasta.masked"
+    params:
+        outdir="03_mates_{te}/"
+    threads:
+        56
+    shell:
+        """
+        RepeatMasker -pa {threads} -lib {input.repbase} -no_is -nocut -nolow -norna -dir {params.outdir} {input.reads}
+        """
+
+rule blast_vs_taxOne:
+    input:
+        reads="03_mates_{te}/{acc}_{ID}_mates.fasta.masked",
+        db="/home/sdunemann/db/genomes/{taxon}/{genome}.gz"
+    output:
+        "03_mates_{te}/{taxon}_{genome}_{acc}_{ID}_uniqMates.out6"
+    threads:
+        56
+    params:
+        dbsize=config["dbsize"]
+    shell:
+        "blastn -db {input.db} -dbsize {params.dbsize} -query {input.reads} -evalue 1e-03 -outfmt 6 -out {output} -num_threads {threads};"
+
+rule merge_blast:
+    input:
+        "03_mates_{te}/{taxon}_{genome}_{acc}_{id}_uniqMates.out6"
+    output:
+        "03_mates_{te}/{taxon}_{genome}_{acc}_{id}_mateBlast.txt"
+    params:
+        taxon="{taxon}",
+        genome="{genome}",
+        acc="{acc}",
+        id="{id}"
+    shell: """
+        awk -v id={params.id} -v taxon={params.taxon} -v genome={params.genome} -v acc={params.acc} 'BEGIN{{OFS="\t"}};{{print $0,taxon,genome,acc,$1"."id}}' {input} |
+        sort -k16,16 -k12,12gr  | uniq -f 15 >> {output}
+    """
+
+rule taxonomy:
+    input:
+        origin=expand(expand("03_mates_{{te}}/{taxon}_{genome}_{{acc}}_{{id}}_mateBlast.txt",zip,taxon=TAX,genome=GENOME), te=config["TE"], acc=ACC, id=IDS),
+    output:
+        hits="taxonomy_besthits.{te}.txt",
+        taxresults="taxonomy_taxa.{te}.txt",
+        specresults="taxonomy_species.{te}.txt"
+    params:
+        te="{te}"
+    shell:
+        """
+        set +eou;
+        for i in `find 03_mates_{params.te}/*mateBlast* -not -empty` ; do
+            cat $i >>temp.txt;
+        done ;
+        sort -k16,16 -k12,12gr temp.txt | uniq -f 15 > {output.hits} ;
+        cut -f 13 {output.hits} | sort | uniq -c > {output.taxresults};
+        cut -f 14 {output.hits} | sort | uniq -c > {output.specresults};
+        rm temp.txt;
+        set -eou;
+        """
+
+rule report:
+    params:
+       TE=lambda wildcards: config["TE"][wildcards.te]
+    input:
+        results="taxonomy_results_{params.TE}.txt",
+        stats="taxonomy_stats_{params.TE}.txt"
+    output: "report.html"
+    run:
+        from snakemake.utils import report
+        with open(input[1]) as stats:
+            f=print (stats.read())
+        report("""
+        Differentiate between endemic and non-endemic sequences based on read pairs workflow
+        ====================================================================================
+        
+        Reads were converted from fastq to fasta and hard-masked if quality under 20. Reads were then blasted against TE        of interest with evalue cutoff of 1e-03. Reads with positive hits were filtered and repeatmasked for TE of inter        est to confirm blast result. Read mates of reads with confirmed TE were checked if they are also TE sequences. I        f not, they were masked for all TEs and then blasted against different taxonomy databases to assess taxon of ori        gin (original or other phylum). 
+        {f}
+        S_
+        """, 
+        output[0], R=input[0], S=input[1]
+        )

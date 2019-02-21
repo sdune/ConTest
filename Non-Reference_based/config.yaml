@@ -1,0 +1,27 @@
+path:
+    "/PATH/TO/READS/"
+
+TE:
+    RTE: "RTE.fasta"
+
+TEdesc:
+    "RTE"
+
+TEdb:
+    "Repbase.fasta"
+
+test_genome:
+    "species_genomic.fna"
+
+dbsize:
+    "dbsize_in_bp"
+
+acc: 
+    - SRR######
+    - SRR######
+
+non-self:
+    "non-self_taxon"
+
+self:
+    "self_taxon"

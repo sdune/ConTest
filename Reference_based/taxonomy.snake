@@ -1,0 +1,70 @@
+configfile: "config.yaml"
+ACC=config["acc"]
+IDS=[1,2]
+GENOMEOTHER, = glob_wildcards(config["taxdb_path"]+"/"+config["other"]+"/{genomeother}.gz")
+GENOMEORIGIN, = glob_wildcards(config["taxdb_path"]+"/"+config["origin"]+"/{genomeorigin}.gz")
+
+ind=GENOMEORIGIN.index(config["test_genome"])
+del GENOMEORIGIN[ind]
+
+GENOME =GENOMEOTHER+GENOMEORIGIN
+TAX =[config["other"]]*len(GENOMEOTHER)+[config["origin"]]*len(GENOMEORIGIN)
+
+
+wildcard_constraints:
+    taxon="[^_]+"
+
+rule blast_vs_taxOne:
+    input:
+        reads="04_mates_{te}/{acc}_{ID}_matesfiltered.fasta",
+        db=config["taxdb_path"]+"{taxon}/{genome}.gz"
+    output:
+        "05_blast_{te}/{taxon}_{genome}_{acc}_{ID}_uniqMates.out6"
+    threads:
+        56
+    params:
+        dbsize=config["db_size"]
+    shell:
+        """
+        mkdir -p 05_blast; 
+        blastn -db {input.db} -dbsize {params.dbsize} -query {input.reads} -evalue 1e-03 -outfmt 6 -out {output} -num_threads {threads};
+        """
+
+rule merge_blast:
+    input:
+        "05_blast_{te}/{taxon}_{genome}_{acc}_{id}_uniqMates.out6"
+    output:
+        "05_blast_{te}/{taxon}_{genome}_{acc}_{id}_mateBlast.txt"
+    params:
+        taxon="{taxon}",
+        genome="{genome}",
+        acc="{acc}",
+        id="{id}"
+    shell: 
+        """
+        awk -v id={params.id} -v taxon={params.taxon} -v genome={params.genome} -v acc={params.acc} 'BEGIN{{OFS="\t"}};{{print $0,taxon,genome,acc,$1"."id}}' {input} |
+        sort -k16,16 -k12,12gr  | uniq -f 15 >> {output}
+        """
+
+rule taxonomy:
+    input:
+        origin=expand(expand("05_blast_{{te}}/{taxon}_{genome}_{{acc}}_{{id}}_mateBlast.txt",zip,taxon=TAX,genome=GENOME), te=config["TE"], acc=ACC, id=IDS),
+    output:
+        hits="taxonomy_besthits.{te}.txt",
+        taxresults="taxonomy_taxa.{te}.txt",
+        specresults="taxonomy_species.{te}.txt"
+    params:
+        te="{te}"
+    shell:
+        """
+        set +eou;
+        for i in `find 05_blast_{params.te}/*mateBlast* -not -empty` ; do
+            cat $i >>temp.txt;
+        done ;
+        sort -k16,16 -k12,12gr temp.txt | uniq -f 15 > {output.hits} ;
+        cut -f 13 {output.hits} | sort | uniq -c > {output.taxresults};
+        cut -f 14 {output.hits} | sort | uniq -c > {output.specresults};
+        rm temp.txt;
+        set -eou;
+        """
+
