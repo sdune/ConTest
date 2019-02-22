@@ -1,0 +1,56 @@
+path:
+    "/home/sdunemann/projects/RTE1/reciprocal_blastn/09_readcontrol/00_reads/"
+
+TE:
+    RTE1_Sar: "/home/sdunemann/projects/RTE1/reciprocal_blastn/15_TE_readMates_tax_denovo/00_data/RTE1_Sar.fasta"
+
+TEdb:
+    "/home/sdunemann/db/TE_databases/repBase230118.ref"
+
+test_genome:
+    "GCF_000181275.1_SorAra2.0_genomic.fna"
+
+taxdb_path:
+    "/home/sdunemann/db/genomes/"
+
+db_size:
+    "3598443077"
+
+self:
+    "mammal"
+nonself:
+    "nematode"
+
+acc:
+    SRR099425: "687"  
+    SRR099426: "500"  
+    SRR099427: "500"  
+    SRR099428: "500"  
+    SRR099430: "500"  
+    SRR099431: "500"  
+    SRR099432: "500"  
+    SRR099434: "687"  
+    SRR099435: "500"  
+    SRR099436: "687"  
+    SRR099437: "687"  
+    SRR099438: "687"  
+    SRR099440: "500"  
+    SRR099441: "500"  
+    SRR099442: "500"  
+    SRR099443: "500"  
+    SRR099444: "500"  
+    SRR099445: "500"  
+    SRR099447: "687"  
+    SRR099448: "500"  
+    SRR107090: "1102" 
+    SRR107091: "1102" 
+    SRR107092: "1102" 
+    SRR252663: "40202"
+    SRR278622: "40202"
+    SRR278623: "40202"
+    SRR099450: "1102" 
+    SRR099449: "1102" 
+    SRR099446: "206"  
+    SRR099439: "549"  
+    SRR099433: "549"  
+    SRR099429: "510"  

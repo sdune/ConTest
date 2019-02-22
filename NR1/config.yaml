@@ -1,0 +1,24 @@
+path:
+    "fastq1/"
+    #"/home/sdunemann/projects/RTE1/reciprocal_blastn/09_readcontrol/00_reads/"
+
+TE:
+    RTE1_Sar: "/home/sdunemann/projects/RTE1/reciprocal_blastn/15_TE_readMates_tax_denovo/00_data/RTE1_Sar.fasta"
+
+TEdb:
+    "/home/sdunemann/db/TE_databases/repBase230118.ref"
+
+test_genome:
+    "GCF_000181275.1_SorAra2.0_genomic.fna"
+
+taxdb_path:
+    "/home/sdunemann/db/genomes/"
+
+db_size:
+    "3598443077"
+
+self:
+    "mammal"
+
+nonself:
+    "nematode"

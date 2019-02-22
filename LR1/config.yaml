@@ -1,0 +1,28 @@
+read_path:
+    "fastq/"
+    #"/home/sdunemann/projects/RTE1/reciprocal_blastn/19_LoaLongReads/AviRTE/00_fastq/"
+
+TE:
+    AviRTE_CAn: "AviRTE_CAn.fasta"
+
+recip_TEs: 
+    "all_AviRTEs.fasta"
+
+
+TEdb:
+    "~/db/TE_databases/repbase230918.fasta"
+
+test_genome:
+    "GCA_000699085.1_ASM69908v1_genomic.fna"
+
+taxdb_path:
+    "/home/sdunemann/db/genomes/"
+
+dbsize:
+    "1595295449"
+
+self:
+    "bird"
+
+nonself:
+    "nematode"
