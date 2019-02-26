@@ -1,54 +1,53 @@
 configfile: "config.yaml"
-ACC=config["acc"]
-IDS=[1,2]
-GENOMEOTHER, = glob_wildcards(config["taxdb_path"]+"/"+config["other"]+"/{genomeother}.gz")
-GENOMEORIGIN, = glob_wildcards(config["taxdb_path"]+"/"+config["origin"]+"/{genomeorigin}.gz")
 
-ind=GENOMEORIGIN.index(config["test_genome"])
-del GENOMEORIGIN[ind]
+ACC,  = glob_wildcards(config["read_path"]+"{accall}.fastq.gz")
+GENOMENONSELF, = glob_wildcards(config["taxdb_path"]+"/"+config["nonself"]+"/{genomenonself}.gz")
+GENOMESELF, = glob_wildcards(config["taxdb_path"]+"/"+config["self"]+"/{genomeself}.gz")
 
-GENOME =GENOMEOTHER+GENOMEORIGIN
-TAX =[config["other"]]*len(GENOMEOTHER)+[config["origin"]]*len(GENOMEORIGIN)
+ind=GENOMESELF.index(config["test_genome"])
+del GENOMESELF[ind]
+
+GENOME =GENOMENONSELF+GENOMESELF
+TAX =[config["nonself"]]*len(GENOMENONSELF)+[config["self"]]*len(GENOMESELF)
 
 
 wildcard_constraints:
-    taxon="[^_]+"
+    taxon="[^_]+",
+    tax="\s+",
 
 rule blast_vs_taxOne:
     input:
-        reads="04_mates_{te}/{acc}_{ID}_matesfiltered.fasta",
+        reads="LR_{te}/{acc}.reciprocal.fasta",
         db=config["taxdb_path"]+"{taxon}/{genome}.gz"
     output:
-        "05_blast_{te}/{taxon}_{genome}_{acc}_{ID}_uniqMates.out6"
+        "LR_{te}/{taxon}_{genome}_{acc}.out6"
     threads:
         56
     params:
         dbsize=config["db_size"]
     shell:
         """
-        mkdir -p 05_blast; 
         blastn -db {input.db} -dbsize {params.dbsize} -query {input.reads} -evalue 1e-03 -outfmt 6 -out {output} -num_threads {threads};
         """
 
 rule merge_blast:
     input:
-        "05_blast_{te}/{taxon}_{genome}_{acc}_{id}_uniqMates.out6"
+        "LR_{te}/{taxon}_{genome}_{acc}.out6"
     output:
-        "05_blast_{te}/{taxon}_{genome}_{acc}_{id}_mateBlast.txt"
+        "LR_{te}/{taxon}_{genome}_{acc}.txt"
     params:
         taxon="{taxon}",
         genome="{genome}",
-        acc="{acc}",
-        id="{id}"
+        acc="{acc}"
     shell: 
         """
-        awk -v id={params.id} -v taxon={params.taxon} -v genome={params.genome} -v acc={params.acc} 'BEGIN{{OFS="\t"}};{{print $0,taxon,genome,acc,$1"."id}}' {input} |
+        awk -v taxon={params.taxon} -v genome={params.genome} -v acc={params.acc} 'BEGIN{{OFS="\t"}};{{print $0,taxon,genome,acc,$1}}' {input} |
         sort -k16,16 -k12,12gr  | uniq -f 15 >> {output}
         """
 
 rule taxonomy:
     input:
-        origin=expand(expand("05_blast_{{te}}/{taxon}_{genome}_{{acc}}_{{id}}_mateBlast.txt",zip,taxon=TAX,genome=GENOME), te=config["TE"], acc=ACC, id=IDS),
+        origin=expand(expand("LR_{{te}}/{taxon}_{genome}_{{acc}}.txt",zip,taxon=TAX,genome=GENOME), te=config["TE"], acc=ACC),
     output:
         hits="taxonomy_besthits.{te}.txt",
         taxresults="taxonomy_taxa.{te}.txt",
@@ -58,7 +57,7 @@ rule taxonomy:
     shell:
         """
         set +eou;
-        for i in `find 05_blast_{params.te}/*mateBlast* -not -empty` ; do
+        for i in `find LR_{params.te}/*genomic*txt -not -empty` ; do
             cat $i >>temp.txt;
         done ;
         sort -k16,16 -k12,12gr temp.txt | uniq -f 15 > {output.hits} ;

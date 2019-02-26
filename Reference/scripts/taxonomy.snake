@@ -1,14 +1,14 @@
 configfile: "config.yaml"
 ACC=config["acc"]
 IDS=[1,2]
-GENOMEOTHER, = glob_wildcards(config["taxdb_path"]+"/"+config["other"]+"/{genomeother}.gz")
-GENOMEORIGIN, = glob_wildcards(config["taxdb_path"]+"/"+config["origin"]+"/{genomeorigin}.gz")
+GENOMENONSELF, = glob_wildcards(config["taxdb_path"]+"/"+config["nonself"]+"/{genomenonself}.gz")
+GENOMESELF, = glob_wildcards(config["taxdb_path"]+"/"+config["self"]+"/{genomeself}.gz")
 
-ind=GENOMEORIGIN.index(config["test_genome"])
-del GENOMEORIGIN[ind]
+ind=GENOMESELF.index(config["test_genome"])
+del GENOMESELF[ind]
 
-GENOME =GENOMEOTHER+GENOMEORIGIN
-TAX =[config["other"]]*len(GENOMEOTHER)+[config["origin"]]*len(GENOMEORIGIN)
+GENOME =GENOMENONSELF+GENOMESELF
+TAX =[config["nonself"]]*len(GENOMENONSELF)+[config["self"]]*len(GENOMESELF)
 
 
 wildcard_constraints:

@@ -11,9 +11,9 @@ List of software
 
 List of files
 - raw reads
-- fasta file with RTE of interest
+- RTE name and fasta file (RTE name must be the same as in Repbase TE database (see below)
 - Repbase TE database (must include RTE of interest)
-- genomes
+- genomes (gzipped)
 
 File structure
 - raw reads in folder
@@ -28,9 +28,12 @@ Other information needed:
 
 II. INSTALL SOFTWARE with conda (channel:bioconda) 
 conda search snakemake==5.1.4
-conda search fastqc==0.11.7
+conda search diamond==0.9.10
+conda search seqtk==1.2
 conda search RepeatMasker==4.0.7
 conda search blast 
+
+conda create -n contest_LR snakemake==5.1.4 diamond==0.9.10 seqtk==1.2 RepeatMasker==4.0.7 blast
 
 
 III. GET FILES
@@ -40,7 +43,11 @@ IV. MODIFY SNAKEMAKE CONFIG FILE
 V. RUN SNAKEMAKE
 
 ```
-snakemake -s Snakefile -j 1 --cluster-config cluster.json --cluster "bsub -n {cluster.nCPUs} -W {cluster.time} -e {cluster.error} -o {cluster.out} -M {cluster.memory} -R {cluster.resources}"
+conda activate contest_LR
+
+mkdir -p logs/cluster
+
+snakemake -j 1 --cluster-config cluster.json --cluster "bsub -n {cluster.nCPUs} -W {cluster.time} -e {cluster.error} -o {cluster.output} -M {cluster.memory} -R {cluster.resources}"
 ``` 
 
 

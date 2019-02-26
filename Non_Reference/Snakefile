@@ -199,7 +199,7 @@ rule blast_vs_taxOne:
     params:
         db_size=config["db_size"]
     shell:
-        "blastn -db {input.db} -db_size {params.db_size} -query {input.reads} -evalue 1e-03 -outfmt 6 -out {output} -num_threads {threads};"
+        "blastn -db {input.db} -dbsize {params.db_size} -query {input.reads} -evalue 1e-03 -outfmt 6 -out {output} -num_threads {threads};"
 
 rule merge_blast:
     input:

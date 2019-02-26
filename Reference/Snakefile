@@ -49,25 +49,25 @@ rule bowtie:
         i5="00_bowtie2_index/"+config["test_genome"]+".rev.1.bt2",
         i6="00_bowtie2_index/"+config["test_genome"]+".rev.2.bt2"        
     output:
-        "01_bowtie2/{acc}.sam",
+        "01_bowtie2/{acc}_sorted.bam",
     threads:
         56
     log:
         "logs/bowtie2/{acc}.log"
     shell:
         """
-        bowtie2 -x {params.x} -1 {input.read1} -2 {input.read2} -X {params.X} --threads {threads} -S {output}  2>{log}"
+        bowtie2 -x {params.x} -1 {input.read1} -2 {input.read2} -X {params.X} --threads {threads} | samtools sort - -o {output}  2>{log}
         """
 
-rule samsort:
-    input:
-        "01_bowtie2/{acc}.sam"
-    output:
-        "01_bowtie2/{acc}_sorted.bam"
-    log:
-        "logs/samtools/{acc}.log"
-    shell:
-        "samtools sort {input} -o {output} 2>{log}"
+#rule samsort:
+#    input:
+#        "01_bowtie2/{acc}.sam"
+#    output:
+#        "01_bowtie2/{acc}_sorted.bam"
+#    log:
+#        "logs/samtools/{acc}.log"
+#    shell:
+#        "samtools sort {input} -o {output} 2>{log}"
 
 rule annotateRTE:
     input:

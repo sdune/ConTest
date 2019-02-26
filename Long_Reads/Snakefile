@@ -2,44 +2,50 @@
 configfile: "config.yaml"
 
 # Variables
-ACC, IDS, = glob_wildcards(config["path"]+"{accall}.fastq.gz")
-GENOMENONSELF, = glob_wildcards(config["taxdb_path"]+config["nonself"]+"/{genomenonself}.gz")
-GENOMESELF, = glob_wildcards(config["taxdb_path"]+config["self"]+"/{genomeself}.gz")
-
-# Exclude test-genome from self database 
-ind = GENOMESELF.index(config["test_genome"])              
-del GENOMESELF[ind]
-
-GENOME = GENOMENONSELF+GENOMESELF
-TAX = [config["nonself"]] * len(GENOMENONSELF) + [config["self"]] * len(GENOMESELF)
+ACC,  = glob_wildcards(config["read_path"]+"{accall}.fastq.gz")
 
 # Wildcard constraints
 wildcard_constraints:
-    id="\d",
     tax="\s+",
-    taxon="[^_]+"
+    taxon="[^_]+",
 
 # Target rule
 rule all:
     input:
-        expand("LR_{te}/{acc}.reciprocal.fasta", acc=ACC, te=config["TE"])
+        expand("taxonomy_taxa.{te}.txt",te=config["TE"])
+        #expand("LR_{te}/{acc}.reciprocal.fasta", acc=ACC, te=config["TE"])
+
+# Build diamond database
+rule build_dmnd:
+    input:
+        TE=lambda wildcards: config["TE"][wildcards.te]
+    output:
+        "{te}.dmnd"       
+    params:
+        TE="{te}"
+    shell:
+        """
+        diamond makedb --in {input.TE} -d {params.TE}
+        """
 
 # Identification of TE in reads 
 rule diamond:
     input:
-        fasta = "00_fastq/{acc}.fastq.gz",
-        TE = lambda wildcards: config["TE"][wildcards.te]
+        db = "{te}.dmnd",
+        fastq = config["read_path"]+"{acc}.fastq.gz"
     output:
-        "LR_{te}/{acc}.out6"
+        dmnd = "LR_{te}/{acc}.out6"
     log:
-        "logs/LR_{te}/{acc}.log"
+        "logs/diamond_{te}/{acc}.log"
     threads:
-        32
+        56
     shell:  
-        "diamond blastx --threads {threads} --db {input.TE} --out {output} --outfmt 6 --query {input.fasta} --more-sensitive"
+        """
+        diamond blastx --threads {threads} --db {input.db} --out {output.dmnd} --outfmt 6 --query {input.fastq} --more-sensitive 2>{log}
+        """
 
 # Get names of reads with TE
-rule get_read_ids:
+rule get_readids:
     input:
         "LR_{te}/{acc}.out6"
     output:
@@ -47,7 +53,7 @@ rule get_read_ids:
     shell:
         """
         set +oue
-        awk -F'\t' '$10<1e-10 {print $1}' {input} > {output} 
+        awk -F'\t' '$11<1e-10 {{print $1}}' {input} > {output} 
         set -oue
         """
 
@@ -55,7 +61,7 @@ rule get_read_ids:
 rule get_reads:
     input:
         reads="LR_{te}/{acc}_filtered.txt",
-        fastq="00_fastq/{acc}.fastq.gz"
+        fastq=config["read_path"]+"{acc}.fastq.gz"
     output:
         "LR_{te}/{acc}.dmndhits.fasta"
     shell:
@@ -67,84 +73,54 @@ rule RepeatMasker:
     input:
         "LR_{te}/{acc}.dmndhits.fasta"
     output:
-        "LR_{te}/{acc}.dmndhits.fasta.out"
+        out="LR_{te}/{acc}.dmndhits.fasta.out",
+        masked="LR_{te}/{acc}.dmndhits.fasta.masked"
     threads:
-        32
+        56
     params:
         outdir="LR_{te}",
         repbase=config["TEdb"]
+    log:
+        "logs/RepeatMasker_{te}/{acc}.log"
     shell:
         """
-        mkdir outdir;
+        set +eou
         RepeatMasker -pa {threads} -s -no_is -nocut -nolow -lib {params.repbase} -dir {params.outdir} {input} 
+        set -eou
         """
 
 
 # Select reads that were masked as TE 
 rule get_reciprocal_reads:
-    input: "LR_{te}/{acc}.dmndhit.fasta.out"
+    input: "LR_{te}/{acc}.dmndhits.fasta.out"
     output: "LR_{te}/{acc}.reciprocal.txt"
     params:
+        allTEs=config["recip_TEs"],
         tefasta=lambda wildcards: config["TE"][wildcards.te]
     shell:
         """
-        grep -f <(grep '>' {params.tefasta} | cut -f 1 | sed 's/>//g') {input} |
-        sort -k5,5 -k1,1g |
-        awk '{{print $0,"\t",$5}}' |
-        uniq -f 15 |
-        awk '{{print $5}}' > {output}
+        set +eou
+        sort -k5,5 -k1,1gr {input} | awk '{{print $0,"\t",$5}}' | uniq -f 15 | 
+        grep -f <(grep '>' {params.allTEs} | cut -f 1 | sed 's/>//g') | awk '{{print $5}}'  > {output}
+        set -euo
         """
 
 # Make fasta file with reads
 rule get_reciprocal_fastas:
     input:
-        "LR_{te}/{acc}.reciprocal.txt"
+        txt="LR_{te}/{acc}.reciprocal.txt",
+        fasta="LR_{te}/{acc}.dmndhits.fasta.masked"
     output:
         "LR_{te}/{acc}.reciprocal.fasta"
     params:
         out="{acc}"
     shell:
         """
-        seqtk subseq LR_{te}/{acc}.dmndhits.fasta {input} > {output}
+        seqtk subseq {input.fasta} {input.txt} > {output}
         """
 
-# Blast reads against genome databases
-rule blast_vs_taxOne:
-    input:
-        reads="LR_{te}/{acc}.reciprocal.fasta",
-        db="/home/sdunemann/db/genomes/{taxon}/{genome}.gz"
-    output:
-        "LR_{te}/{taxon}_{genome}_{acc}.out6"
-    threads:
-        56
-    params:
-        dbsize=config["dbsize"]
-    shell:
-        "blastn -db {input.db} -dbsize {params.dbsize} -query {input.reads} -evalue 1e-03 -outfmt 6 -out {output} -num_threads {threads};"
-
-
-# Get results
-rule taxonomy:
-    input:
-        expand(expand("LR_{{te}}/{taxon}_{genome}_{{acc}}.out6",zip,taxon=TAX,genome=GENOME), te=config["TE"], acc=ACC),
-    output:
-        hits="taxonomy_besthits.{te}.txt",
-        taxresults="taxonomy_taxa.{te}.txt",
-        specresults="taxonomy_species.{te}.txt"
-    params:
-        te="{te}"
-    shell:
-        """
-        set +eou;
-        for i in `find LR_{params.te}/*.out6 -not -empty` ; do
-            cat $i >>temp.txt;
-        done ;
-        sort -k16,16 -k12,12gr temp.txt | uniq -f 15 > {output.hits} ;
-        cut -f 13 {output.hits} | sort | uniq -c > {output.taxresults};
-        cut -f 14 {output.hits} | sort | uniq -c > {output.specresults};
-        rm temp.txt;
-        set -eou;
-        """
+       
+include: "scripts/taxonomy.snake"
 
 rule report:
     params:
