@@ -1,5 +1,6 @@
+ConTest - Paired-end reads with reference genome
 
-I. LISTS OF SOFTWARE AND DATA NEEDED
+## LISTS OF SOFTWARE AND DATA NEEDED
 
 List of software
 - snakemake (v5.1.4) NOTE: newer versions might not be compatible with cluster config
@@ -28,22 +29,22 @@ Other information needed:
 - reads accessions and insert size
 
 
-II. INSTALL SOFTWARE with conda (channel:bioconda) 
+## INSTALL SOFTWARE with conda (channel:bioconda) 
 
 You can either install the software as listed above in a new conda environment (recommended) or use your own software versions. Note that this might result in incompatibilities. Conda command to install software in a new environment is noted below. You need to have the bioconda channel added to your conda config (conda config --add channels bioconda). 
 
 
-III. GET FILES
+## GET FILES
 
 Make sure you have all read and genome files in directories as described above. 
 
 
-IV. MODIFY SNAKEMAKE FILES
+## MODIFY SNAKEMAKE FILES
 
 You need to modify the config.yaml and cluster.json according to your data and computing resources. The example config file works on a lsf system. For more information see https://snakemake.readthedocs.io/en/stable/snakefiles/configuration.html . If you are not using a cluster system, omit the cluster.json and the cluster flags in the snakemake command.
 
 
-V. RUN SNAKEMAKE
+## RUN SNAKEMAKE
 
 If you have everything prepared, you can start running snakemake. The -j flag specifies the maximum number of jobs submitted simultaneously to the cluster. 
 

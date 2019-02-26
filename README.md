@@ -37,7 +37,8 @@ conda activate contest_environment
 
 # Edit config.yaml and cluster.json
 
-# Run Snakemake
+# Run Snakemake (Test with '-np' or '-n --quiet' option)
+
 snakemake -j 1 --cluster-config cluster.json --cluster "bsub -n {cluster.nCPUs} -W {cluster.time} -e {cluster.error} -o {cluster.output} -M {cluster.memory} -R {cluster.resources}"
 ``` 
 

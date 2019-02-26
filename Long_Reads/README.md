@@ -1,5 +1,6 @@
+# ConTest - Long Reads
 
-I. LISTS OF SOFTWARE AND DATA NEEDED
+## LISTS OF SOFTWARE AND DATA NEEDED
 
 List of software
 - snakemake (v5.1.4) NOTE: don't use newer version, not compatible with cluster config
@@ -26,21 +27,17 @@ Other information needed:
 - read accessions
 
 
-II. INSTALL SOFTWARE with conda (channel:bioconda) 
-conda search snakemake==5.1.4
-conda search diamond==0.9.10
-conda search seqtk==1.2
-conda search RepeatMasker==4.0.7
-conda search blast 
+# INSTALL SOFTWARE with conda (channel:bioconda) 
 
+```
 conda create -n contest_LR snakemake==5.1.4 diamond==0.9.10 seqtk==1.2 RepeatMasker==4.0.7 blast
+```
 
+# GET FILES
 
-III. GET FILES
+# MODIFY SNAKEMAKE CONFIG FILE
 
-IV. MODIFY SNAKEMAKE CONFIG FILE
-
-V. RUN SNAKEMAKE
+# RUN SNAKEMAKE
 
 ```
 conda activate contest_LR

@@ -1,5 +1,7 @@
+# Contest - Paired-end reads without reference
 
-I. LISTS OF SOFTWARE AND DATA NEEDED
+
+## List of software and data
 
 List of software
 - snakemake (v5.1.4) NOTE: don't use newer version, not compatible with cluster config
@@ -26,34 +28,28 @@ Other information needed:
 - read accessions
 
 
-II. INSTALL SOFTWARE with conda (channel:bioconda) 
-conda search snakemake==5.1.4
-conda search fastqc==0.11.7
-conda search RepeatMasker==4.0.7
-conda search blast 
-conda search seqtk==1.2
+## Install software with conda (channel:bioconda) 
 
-III. GET FILES
+```
+conda create -n contest_NRef snakemake==5.1.4 bioawk RepeatMasker==4.0.7 blast fastqc==0.11.7 seqtk=1.2
+```
 
-IV. MODIFY SNAKEMAKE CONFIG FILE
+## GET FILES
 
-V. RUN SNAKEMAKE
+## MODIFY SNAKEMAKE CONFIG FILE
+
+## RUN SNAKEMAKE
 
 ```
 # Create conda environment
-conda create -n contest_NRef snakemake==5.1.4 bioawk RepeatMasker==4.0.7 blast fastqc==0.11.7 seqtk==1.2
 conda activate contest_NRef
 
 # Prepare log directories
 mkdir -p logs/cluster
 
-# Edit files
+# Edit config.yaml and cluster.json
 
 # Submit SnakeMake
-# Test with '-np' or '-n --quiet' option :
-snakemake -np -j 1 --cluster-config cluster.json --cluster "bsub -n {cluster.nCPUs} -W {cluster.time} -e {cluster.error} -o {cluster.output} -M {cluster.memory} -R {cluster.resources}"
-
-
 snakemake -j 1 --cluster-config cluster.json --cluster "bsub -n {cluster.nCPUs} -W {cluster.time} -e {cluster.error} -o {cluster.output} -M {cluster.memory} -R {cluster.resources}"
 ``` 
 
