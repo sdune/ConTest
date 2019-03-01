@@ -1,27 +1,31 @@
 read_path:
-    #"fastq/"
-    "/home/sdunemann/projects/RTE1/reciprocal_blastn/19_LoaLongReads/AviRTE/00_fastq/"
+    "/path/to/fastq-files/"
 
 TE:
-    BovB: "BovB.fasta"
+    RTE_name: "RTE_name.fasta"
 
+# include same RTE from other species for less restrained reciprocal search
 recip_TEs: 
-    "all_BovBs.fasta"
+    "all_RTE_names_from_other_species.fasta"
 
 TEdb:
-    "~/db/TE_databases/repbase230918.fasta"
+    "/path/to/transposondb.fasta"
 
+# must include "genomic"
 test_genome:
-    "loa_loa.PRJNA60051.WBPS6.genomic.fa"
+    "test_genome.genomic.fa"
 
+# path to assemblies; dir must contain subfolders named after taxa below (self and nonself)    
 taxdb_path:
-    "/home/sdunemann/db/genomes/"
+    "/path/to/genomes/"
 
 db_size:
-    "1595295449"
+    "3000000000"
 
+#taxon of test genome, e.g. 'mammal'
 self:
-    "nematode"
+    "taxon"
 
+# taxon of potential contaminants, e.g. 'nematode'
 nonself:
-    "bird"
+    "taxon"

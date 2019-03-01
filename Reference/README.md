@@ -50,10 +50,12 @@ If you have everything prepared, you can start running snakemake. The -j flag sp
 
 
 ```
-# Create conda contest environment 
-conda create -n contest_R snakemake==5.1.4 bowtie2==2.3.4.3 bedtools==2.24.0 samtools==1.5 bioawk RepeatMasker==4.0.7 blast
+# Create conda contest environment (openssl1.0 for samtools; conda pulls automatically openssl1.1 which is incompatible)
+conda create -n contest_R snakemake==5.1.4 bowtie2==2.3.4.3 bedtools==2.24.0 samtools==1.5 bioawk RepeatMasker==4.0.7 blast seqtk==1.2 openssl=1.0
 
 conda activate contest_R
+
+mkdir -p logs/cluster
 
 # edit config.yaml and cluster.json as described above
 

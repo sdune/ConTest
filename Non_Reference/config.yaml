@@ -1,24 +1,28 @@
 path:
-    "fastq1/"
-    #"/home/sdunemann/projects/RTE1/reciprocal_blastn/09_readcontrol/00_reads/"
+    "/path/to/reads/"
 
 TE:
-    RTE1_Sar: "/home/sdunemann/projects/RTE1/reciprocal_blastn/15_TE_readMates_tax_denovo/00_data/RTE1_Sar.fasta"
+    RTE_name: "/path/to/RTE_name.fasta"
 
 TEdb:
-    "/home/sdunemann/db/TE_databases/repBase230118.ref"
+    "/path/to/TE_database/transposondb.fasta"
 
+# must include "genomic"
 test_genome:
-    "GCF_000181275.1_SorAra2.0_genomic.fna"
+    "test_genome_genomic.fna"
 
+# subfolders with taxon names as below (self and nonself)
 taxdb_path:
-    "/home/sdunemann/db/genomes/"
+    "/path/to/genomes/"
 
+# size of largest genome included
 db_size:
-    "3598443077"
+    "3000000000"
 
+# taxon of test genome, e.g. 'mammal'
 self:
-    "mammal"
+    "selftaxon"
 
+# taxon of potential contamination, e.g. 'nematode'
 nonself:
-    "nematode"
+    "nonselftaxon"

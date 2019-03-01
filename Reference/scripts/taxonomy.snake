@@ -26,7 +26,6 @@ rule blast_vs_taxOne:
         dbsize=config["db_size"]
     shell:
         """
-        mkdir -p 05_blast; 
         blastn -db {input.db} -dbsize {params.dbsize} -query {input.reads} -evalue 1e-03 -outfmt 6 -out {output} -num_threads {threads};
         """
 
