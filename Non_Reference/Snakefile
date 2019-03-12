@@ -1,8 +1,8 @@
 configfile: "config.yaml"
 
 ACC, IDS, = glob_wildcards(config["path"]+"{accall}_{id}.fastq.gz")
-GENOMENONSELF, = glob_wildcards("/home/sdunemann/db/genomes/"+config["nonself"]+"/{genomenonself}.gz")
-GENOMESELF, = glob_wildcards("/home/sdunemann/db/genomes/"+config["self"]+"/{genomeself}.gz")
+GENOMENONSELF, = glob_wildcards(config["taxdb_path"]+config["nonself"]+"/{genomenonself}.gz")
+GENOMESELF, = glob_wildcards(config["taxdb_path"]+config["self"]+"/{genomeself}.gz")
 
 
 ind=GENOMESELF.index(config["test_genome"])              
@@ -19,8 +19,6 @@ wildcard_constraints:
 rule all:
     input:
         expand("taxonomy_species.{te}.txt", te=config["TE"])
-        #expand("02_blast_{te}/{acc}_{id}_HSP.fulllen.txt", acc=ACC, te=config["TE"], id=IDS)
-        #expand(expand("04_mates_{{te}}/{tax}_{genome}_{{acc}}_{{id}}_uniqMates.out6", zip,tax=TAX,genome=GENOME), te=config["TE"], acc=ACC, id=IDS)
 
 rule fastqc:
     input:
@@ -191,7 +189,7 @@ rule mask_mates:
 rule blast_vs_taxOne:
     input:
         reads="03_mates_{te}/{acc}_{ID}_mates.fasta.masked",
-        db="/home/sdunemann/db/genomes/{taxon}/{genome}.gz"
+        db=config["taxdb_path"]+"{taxon}/{genome}.gz"
     output:
         "03_mates_{te}/{taxon}_{genome}_{acc}_{ID}_uniqMates.out6"
     threads:
@@ -199,7 +197,7 @@ rule blast_vs_taxOne:
     params:
         db_size=config["db_size"]
     shell:
-        "blastn -db {input.db} -dbsize {params.db_size} -query {input.reads} -evalue 1e-03 -outfmt 6 -out {output} -num_threads {threads};"
+        "blastn -db {input.db} -dbsize {params.db_size} -query {input.reads} -evalue 1e-10 -outfmt 6 -out {output} -num_threads {threads};"
 
 rule merge_blast:
     input:
