@@ -1,6 +1,7 @@
 # ConTest - Test for contamination in sequence reads
 
-ConTest consists of three different Snakemake pipelines to test for contamination
+ConTest consists of three different Snakemake pipelines to test for contamination. It was designed to test with sequencing reads if a retrotransposon is endogenous in a species, or if it got into a genome assembly through contamination. To use the pipeline, these files are needed: sequence reads (and genome assembly for the reference based workflow) from the species to be tested, a transposon database, all genome assemblies from the taxon which is being tested for contamination, and all genome assemblies from the putative contaminating taxon. 
+
 
 
 ## Citation 
@@ -13,7 +14,7 @@ Sonja M. Dunemann and James D. Wasmuth (2018): A nematode retrotransposon in the
 Pipelines are based on: long reads, paired-end reads with reference genome, and paired-end reads without reference genome. The paired-end reads with reference genome approach is computationally most expensive. 
 
 
-## Install software with conda (channel:bioconda) 
+## Install dependencies with conda (channel:bioconda) 
 
 You can either install the software as listed above in a new conda environment (recommended) or use your own software versions. Note that this might result in incompatibilities (more about this in the individual Readme files). Conda commands to install software are in all Readme files. You need to have the bioconda channel added to your conda config (conda config --add channels bioconda). 
 
