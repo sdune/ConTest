@@ -8,7 +8,6 @@ wildcard_constraints:
 
 rule all:
     input:
-        #expand("01_bowtie2/{acc}.bam", acc=config["acc"])
         expand("taxonomy_species.{te}.txt", te=config["TE"])
 
 rule bowtiebuild:
@@ -25,8 +24,6 @@ rule bowtiebuild:
         "00_bowtie2_index/"+config["test_genome"]+".rev.2.bt2"
     threads:
         8
-    #conda:
-    #    "envs/contest.yaml"
     shell:
         """
         mkdir -p 00_bowtie2_index; 
@@ -103,8 +100,6 @@ rule intersectBed:
         "03_intersect_{te}/{acc}.bam"
     params:
         te="{te}"                
-    #conda:
-    #    "envs/contest.yaml"
     shell:
         """
         mkdir -p 03_intersect_{params.te};
@@ -160,8 +155,6 @@ rule RM:
         56
     params:
         outdir="04_mates_{te}"
-    #conda:
-    #    "envs/contest.yaml"
     shell:
         """
         RepeatMasker -pa {threads} -lib {input.lib} -no_is -nocut -nolow -norna -dir {params.outdir} {input.mates}; 
@@ -185,19 +178,3 @@ rule filter_mates:
 
 include: "scripts/taxonomy.snake"
 
-
-rule report:
-    params:
-    input:
-    output: "report.html"
-    run:
-        from snakemake.utils import report
-        with open(input[1]) as stats:
-            f=print (stats.read())
-        report("""
-        TITLE
-        ====================================================================================
-        Description
-        """, 
-        output[0], R=input[0]
-        )

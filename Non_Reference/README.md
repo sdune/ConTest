@@ -30,13 +30,19 @@ Other information needed:
 
 ## Install software with conda (channel:bioconda) 
 
+You can either install the software as listed above in a new conda environment (recommended) or use your own software versions. Note that this might result in incompatibilities (more about this in the individual Readme files). Conda co
+mmands to install software are in all Readme files. You need to have the bioconda channel added to your conda config (conda config --add channels bioconda).
+
 ```
 conda create -n contest_NRef snakemake==5.1.4 bioawk RepeatMasker==4.0.7 blast fastqc==0.11.7 seqtk=1.2
 ```
 
-## GET FILES
 
-## MODIFY SNAKEMAKE CONFIG FILE
+## Modify configuration files
+
+You need to modify the config.yaml and cluster.json according to your data and computing resources. The example config file works on a lsf system. For more information see https://snakemake.readthedocs.io/en/stable/snakefiles/configura
+tion.html . If you are not using a cluster system, omit the cluster.json and the cluster flags in the snakemake command.
+
 
 ## RUN SNAKEMAKE
 

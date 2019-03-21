@@ -13,7 +13,6 @@ wildcard_constraints:
 rule all:
     input:
         expand("taxonomy_taxa.{te}.txt",te=config["TE"])
-        #expand("LR_{te}/{acc}.reciprocal.fasta", acc=ACC, te=config["TE"])
 
 # Build diamond database
 rule build_dmnd:
@@ -122,24 +121,3 @@ rule get_reciprocal_fastas:
        
 include: "scripts/taxonomy.snake"
 
-rule report:
-    params:
-       TE=lambda wildcards: config["TE"][wildcards.te]
-    input:
-        results="taxonomy_results_{params.TE}.txt",
-        stats="taxonomy_stats_{params.TE}.txt"
-    output: "report.html"
-    run:
-        from snakemake.utils import report
-        with open(input[1]) as stats:
-            f=print (stats.read())
-        report("""
-        Differentiate between endemic and non-endemic sequences based on read pairs workflow
-        ====================================================================================
-        
-        Reads were converted from fastq to fasta and hard-masked if quality under 20. Reads were then blasted against TE        of interest with evalue cutoff of 1e-03. Reads with positive hits were filtered and repeatmasked for TE of inter        est to confirm blast result. Read mates of reads with confirmed TE were checked if they are also TE sequences. I        f not, they were masked for all TEs and then blasted against different taxonomy databases to assess taxon of ori        gin (original or other phylum). 
-        {f}
-        S_
-        """, 
-        output[0], R=input[0], S=input[1]
-        )
